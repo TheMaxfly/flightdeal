@@ -1,0 +1,51 @@
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional
+
+from dotenv import load_dotenv
+
+
+@dataclass(frozen=True)
+class Settings:
+    sheety_endpoint: str
+    sheety_token: Optional[str] = None
+    sheety_data_key: str = "prices"
+    amadeus_api_key: Optional[str] = None
+    amadeus_api_secret: Optional[str] = None
+    default_origin_iata: Optional[str] = None
+    default_departure_date: Optional[str] = None
+    default_return_date: Optional[str] = None
+    twilio_sid: Optional[str] = None
+    twilio_auth_token: Optional[str] = None
+    twilio_from: Optional[str] = None
+    twilio_to: Optional[str] = None
+
+    def validate(self) -> None:
+        """Assert that the minimal required values are provided."""
+        if not self.sheety_endpoint:
+            raise EnvironmentError("SHEETY_ENDPOINT must be set (see .env.example).")
+
+
+def load_settings(dotenv_path: Optional[str] = None) -> Settings:
+    """Build project settings from the environment (loads a .env via python-dotenv)."""
+    load_dotenv(dotenv_path=Path(dotenv_path) if dotenv_path else Path(".env"))
+
+    settings = Settings(
+        sheety_endpoint=os.getenv("SHEETY_ENDPOINT", ""),
+        sheety_token=os.getenv("SHEETY_TOKEN"),
+        sheety_data_key=os.getenv("SHEETY_DATA_KEY", "prices"),
+        amadeus_api_key=os.getenv("AMADEUS_API_KEY"),
+        amadeus_api_secret=os.getenv("AMADEUS_API_SECRET"),
+        default_origin_iata=(os.getenv("ORIGIN_IATA") or "CDG").upper(),
+        default_departure_date=os.getenv("DEFAULT_DEPARTURE_DATE"),
+        default_return_date=os.getenv("DEFAULT_RETURN_DATE"),
+        twilio_sid=os.getenv("TWILIO_SID"),
+        twilio_auth_token=os.getenv("TWILIO_AUTH_TOKEN"),
+        twilio_from=os.getenv("TWILIO_FROM"),
+        twilio_to=os.getenv("TWILIO_TO"),
+    )
+    settings.validate()
+    return settings
