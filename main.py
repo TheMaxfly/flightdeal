@@ -20,10 +20,14 @@ class Destination:
     lowest_price: float
 
 
+# Name of the column in the users sheet that stores email addresses.
+CUSTOMER_EMAIL_FIELD = "email"
+
+
 def build_data_manager(settings: Settings) -> DataManager:
     """Constructs a manager from the pre-validated project settings."""
     return DataManager(
-        sheety_endpoint=settings.sheety_endpoint,
+        prices_endpoint=settings.sheety_endpoint,
         data_key=settings.sheety_data_key,
         auth_token=settings.sheety_token,
     )
@@ -76,6 +80,17 @@ def build_destinations(sheet_rows: Iterable[Dict[str, Any]]) -> List[Destination
             Destination(city=city, iata_code=iata_code, lowest_price=lowest_price)
         )
     return destinations
+
+
+def load_customer_emails(manager: DataManager, email_field: str) -> List[str]:
+    """Load all customer email addresses from the users sheet."""
+    customer_rows = manager.get_customer_emails()
+    emails: List[str] = []
+    for row in customer_rows:
+        email_value = (row.get(email_field) or "").strip()
+        if email_value:
+            emails.append(email_value)
+    return emails
 
 
 def search_destinations(
@@ -187,6 +202,7 @@ def main() -> None:
 
     manager = build_data_manager(settings)
     rows = manager.get_data()
+    customer_emails = load_customer_emails(manager, CUSTOMER_EMAIL_FIELD)
 
     performed_action = False
     if args.fetch:
