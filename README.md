@@ -1,6 +1,6 @@
 # Flight Deal Alert Bot
 
-Ce projet suit ton entraînement Python : il lit une feuille Google Sheet de destinations/prix via Sheety, compare les prix à ceux d’Amadeus, puis envoie un SMS via Twilio lorsque la meilleure offre est inférieure au prix cible.
+Ce projet suit ton entraînement Python : il lit une feuille Google Sheet de destinations/prix via Sheety, compare les prix à ceux d’Amadeus, puis envoie un SMS via Twilio et un e-mail aux utilisateurs inscrits lorsque la meilleure offre est inférieure au prix cible.
 
 ## Structure principale
 
@@ -8,8 +8,8 @@ Ce projet suit ton entraînement Python : il lit une feuille Google Sheet de des
 - `data_manager.py` : encapsule les appels Sheety (`GET`, `POST`, `PUT`) pour lire ou mettre à jour les lignes de la feuille.  
 - `flight_data.py` : transforme une réponse Amadeus en objet immuable avec le prix, les aéroports, les dates et les escales.  
 - `flight_search.py` : gère l’authentification OAuth, résout les codes IATA manquants via Amadeus et récupère le vol le moins cher.  
-- `notification_manager.py` : compose un SMS avec les détails du deal et l’envoie via l’API REST Twilio.  
-- `main.py` : script CLI qui assemble tout : lecture Sheety, synchronisation des codes IATA, requêtes Amadeus, comparaison des prix et envoi de SMS.
+- `notification_manager.py` : compose un SMS avec les détails du deal, l’envoie via l’API REST Twilio et expédie en parallèle un e-mail à tous les utilisateurs listés dans l’onglet `users` de Sheety.
+- `main.py` : script CLI qui assemble tout : lecture Sheety, synchronisation des codes IATA, requêtes Amadeus, comparaison des prix et envoi des notifications (SMS + e-mail).
 - `.env.example` : modèle des variables sensibles à remplir localement (Sheety, Amadeus, Twilio, dates par défaut).  
 - `.gitignore` : exclut les fichiers sensibles (`.env`, `.venv`, caches) pour protéger les clés.
 - `.github/workflows/flight-deals.yml` : workflow GitHub Actions qui exécute quotidiennement `python main.py --search --notify`.
@@ -20,9 +20,11 @@ Ce projet suit ton entraînement Python : il lit une feuille Google Sheet de des
 2. Installer les dépendances : `pip install -r requirements.txt` (ou `requests python-dotenv` si aucun fichier requirements).  
 3. Copier `.env.example` en `.env` et renseigner :
    - `SHEETY_ENDPOINT`, `SHEETY_TOKEN`, `SHEETY_DATA_KEY` (avec l’URL Sheety de ta feuille de destination).
+   - `SHEETY_USERS_ENDPOINT` + `SHEETY_USERS_KEY` si nécessaire pour le second onglet `users`.
    - `AMADEUS_API_KEY`, `AMADEUS_API_SECRET`.
    - `TWILIO_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`, `TWILIO_TO`.
-   - Optionnel : `DEFAULT_DEPARTURE_DATE`, `DEFAULT_RETURN_DATE` si tu veux les fixer (sinon on part de +6 mois).  
+   - `EMAIL_SENDER`, `EMAIL_PASSWORD` et éventuellement `SMTP_HOST`, `SMTP_PORT` pour expédier les notifications par e-mail.
+   - Optionnel : `DEFAULT_DEPARTURE_DATE`, `DEFAULT_RETURN_DATE` si tu veux les fixer (sinon on part de +6 mois).
    - Le script utilise `python-dotenv` pour charger ces valeurs.
 
 ## Exécution manuelle
@@ -32,7 +34,7 @@ Tu peux tester en local avec :
 ```
 python main.py --fetch                  # visualise les données Sheety
 python main.py --sync-iata             # complète les codes IATA manquants via Amadeus
-python main.py --search --notify        # compare les prix et SMS si un deal est meilleur
+python main.py --search --notify        # compare les prix puis SMS + email si un deal est meilleur
 ```
 
 Ajoute `--origin`, `--departure`, `--return` si tu veux composer des dates/IAta personnalisées.  
@@ -54,7 +56,7 @@ La combinaison `--search --notify` est celle utilisée dans le workflow GitHub A
 Chaque run GitHub Actions affiche :
 
 - les étapes (checkout, setup, install, run).  
-- la sortie de `main.py`, qui indique si un vol a été trouvé et si un SMS a été émis.  
+- la sortie de `main.py`, qui indique si un vol a été trouvé et si des SMS/e-mails ont été émis.
 - les erreurs éventuelles (authentification Amadeus ou Twilio). Tu peux relancer le workflow manuellement après avoir corrigé.
 
 ## Étapes suivantes
