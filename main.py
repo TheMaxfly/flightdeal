@@ -10,7 +10,7 @@ import requests
 from config import Settings, load_settings
 from data_manager import DataManager
 from flight_search import FlightSearch
-from notification_manager import NotificationManager
+from notification_manager import NotificationError, NotificationManager
 
 
 @dataclass
@@ -123,10 +123,17 @@ def search_destinations(
         )
         if in_target and notifier:
             try:
-                sms_sid = notifier.send_deal_alert(offer, destination.lowest_price)
-                print(f"    SMS envoyé (Twilio SID: {sms_sid}).")
-            except requests.RequestException as exc:
-                print(f"    ⚠️ impossible d'envoyer le SMS: {exc}")
+                notification = notifier.send_deal_alert(offer, destination.lowest_price)
+            except (requests.RequestException, NotificationError) as exc:
+                print(f"    ⚠️ impossible d'envoyer la notification: {exc}")
+            else:
+                if notification.sms_sid:
+                    print(f"    SMS envoyé (Twilio SID: {notification.sms_sid}).")
+                if notification.emails_sent:
+                    plural = "s" if notification.emails_sent > 1 else ""
+                    print(
+                        f"    Email{plural} envoyé{plural} à {notification.emails_sent} client{plural}."
+                    )
 
 
 def sync_missing_iata_codes(
@@ -236,11 +243,19 @@ def main() -> None:
             if not all([settings.twilio_sid, settings.twilio_auth_token, settings.twilio_from, settings.twilio_to]):
                 parser.error("Twilio configuration is incomplete; set TWILIO_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM, TWILIO_TO.")
                 return
+            if not settings.email_sender or not settings.email_password:
+                parser.error("Email configuration is incomplete; set EMAIL_SENDER and EMAIL_PASSWORD.")
+                return
             notifier = NotificationManager(
                 account_sid=settings.twilio_sid,
                 auth_token=settings.twilio_auth_token,
                 from_number=settings.twilio_from,
                 to_number=settings.twilio_to,
+                customer_emails=customer_emails,
+                email_sender=settings.email_sender,
+                email_password=settings.email_password,
+                smtp_host=settings.smtp_host,
+                smtp_port=settings.smtp_port,
             )
 
     if args.sync_iata and flight_search:
