@@ -16,7 +16,8 @@ class FlightData:
     destination_airport: str
     out_date: str
     return_date: str
-    stop_overs: int = 0
+    stops: int = 0
+    is_direct: bool = True
     via_city: Optional[str] = None
 
     @classmethod
@@ -28,20 +29,27 @@ class FlightData:
         inbound = itineraries[-1] if len(itineraries) > 1 else outbound
 
         outbound_segments = outbound.get("segments", [])
+        if not outbound_segments:
+            raise ValueError("Amadeus offer missing outbound segments.")
+
         inbound_segments = inbound.get("segments", [])
         outbound_first = outbound_segments[0]
-        inbound_last = inbound_segments[-1] if inbound_segments else outbound_segments[-1]
+        outbound_last = outbound_segments[-1]
+        inbound_last = inbound_segments[-1] if inbound_segments else outbound_last
 
-        stop_overs = max(len(outbound_segments) - 1, 0)
+        stops = max(len(outbound_segments) - 1, 0)
         via_city: Optional[str] = None
-        if stop_overs:
-            via_city = outbound_segments[0]["arrival"].get("iataCode")
+        if stops:
+            first_stop_arrival = outbound_segments[0]["arrival"]
+            via_city = first_stop_arrival.get("cityCode") or first_stop_arrival.get("iataCode")
 
-        origin_airport = outbound_first["departure"].get("iataCode", "")
-        destination_airport = outbound_first["arrival"].get("iataCode", "")
-        origin_city = outbound_first["departure"].get("cityCode") or origin_airport
-        destination_city = outbound_first["arrival"].get("cityCode") or destination_airport
-        out_date = outbound_first["departure"].get("at", "").split("T")[0]
+        origin_departure = outbound_first["departure"]
+        destination_arrival = outbound_last["arrival"]
+        origin_airport = origin_departure.get("iataCode", "")
+        destination_airport = destination_arrival.get("iataCode", "")
+        origin_city = origin_departure.get("cityCode") or origin_airport
+        destination_city = destination_arrival.get("cityCode") or destination_airport
+        out_date = origin_departure.get("at", "").split("T")[0]
         return_date = inbound_last["arrival"].get("at", "").split("T")[0]
 
         return cls(
@@ -53,6 +61,7 @@ class FlightData:
             destination_airport=destination_airport,
             out_date=out_date,
             return_date=return_date,
-            stop_overs=stop_overs,
+            stops=stops,
+            is_direct=(stops == 0),
             via_city=via_city,
         )

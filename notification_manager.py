@@ -42,7 +42,7 @@ class NotificationManager:
             f"à {flight.price:.2f} {flight.currency} (cible {threshold_price:.2f}). "
             f"Aller: {flight.out_date}, retour: {flight.return_date}."
         )
-        if flight.stop_overs:
+        if flight.stops:
             via_info = f" via {flight.via_city}" if flight.via_city else ""
-            body += f" {flight.stop_overs} escale(s){via_info}."
+            body += f" {flight.stops} escale(s){via_info}."
         return self.send_sms(body)

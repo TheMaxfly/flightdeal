@@ -14,6 +14,7 @@ class FlightSearch:
     TOKEN_URL = "https://test.api.amadeus.com/v1/security/oauth2/token"
     FLIGHT_OFFERS_URL = "https://test.api.amadeus.com/v2/shopping/flight-offers"
     LOCATIONS_URL = "https://test.api.amadeus.com/v1/reference-data/locations"
+    MAX_INDIRECT_OFFERS = 20
 
     def __init__(
         self,
@@ -70,7 +71,7 @@ class FlightSearch:
         """Return the cheapest flight offer for the given destination and dates."""
         if not self.origin_iata:
             raise ValueError("FlightSearch requires origin_iata to search for flights.")
-        params: Dict[str, Any] = {
+        base_params: Dict[str, Any] = {
             "originLocationCode": self.origin_iata,
             "destinationLocationCode": destination_iata,
             "departureDate": departure_date,
@@ -80,15 +81,22 @@ class FlightSearch:
             "max": 1,
         }
         if max_price is not None:
-            params["maxPrice"] = str(max_price)
+            base_params["maxPrice"] = str(max_price)
 
-        response = requests.get(self.FLIGHT_OFFERS_URL, headers=self._headers(), params=params)
-        response.raise_for_status()
-        payload = response.json()
-        offers = payload.get("data", [])
-        if not offers:
-            return None
-        return FlightData.from_amadeus_offer(offers[0])
+        direct_offer = self._fetch_best_offer(
+            base_params,
+            non_stop=True,
+            max_results=1,
+        )
+        if direct_offer:
+            return direct_offer
+
+        return self._fetch_best_offer(
+            base_params,
+            non_stop=False,
+            max_results=self.MAX_INDIRECT_OFFERS,
+            max_stops=2,
+        )
 
     def find_city_code(self, city_name: str) -> Optional[str]:
         """Look up the IATA city code for the provided city name."""
@@ -104,3 +112,35 @@ class FlightSearch:
         if not data:
             return None
         return data[0].get("iataCode")
+
+    def _fetch_best_offer(
+        self,
+        base_params: Dict[str, Any],
+        *,
+        non_stop: bool,
+        max_results: int,
+        max_stops: Optional[int] = None,
+    ) -> Optional[FlightData]:
+        params = dict(base_params)
+        params["nonStop"] = "true" if non_stop else "false"
+        params["max"] = max_results
+        offers = self._request_offers(params)
+        if not offers:
+            return None
+
+        valid_flights = []
+        for offer in offers:
+            flight = FlightData.from_amadeus_offer(offer)
+            if max_stops is not None and flight.stops > max_stops:
+                continue
+            valid_flights.append(flight)
+
+        if not valid_flights:
+            return None
+        return min(valid_flights, key=lambda flight: flight.price)
+
+    def _request_offers(self, params: Dict[str, Any]) -> list[Dict[str, Any]]:
+        response = requests.get(self.FLIGHT_OFFERS_URL, headers=self._headers(), params=params)
+        response.raise_for_status()
+        payload = response.json()
+        return payload.get("data", [])
