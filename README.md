@@ -1,6 +1,6 @@
 # Flight Deal Alert Bot
 
-Ce projet suit ton entraînement Python : il lit une feuille Google Sheet de destinations/prix via Sheety, compare les prix à ceux d’Amadeus, puis envoie un SMS via Twilio et un e-mail aux utilisateurs inscrits lorsque la meilleure offre est inférieure au prix cible.
+Ce projet lit une feuille Google Sheet de destinations/prix via Sheety, compare les prix à ceux d’Amadeus, puis envoie un SMS via Twilio et un e-mail aux utilisateurs inscrits lorsque la meilleure offre est inférieure au prix cible.
 
 ## Structure principale
 
