@@ -27,9 +27,13 @@ CUSTOMER_EMAIL_FIELD = "email"
 def build_data_manager(settings: Settings) -> DataManager:
     """Constructs a manager from the pre-validated project settings."""
     return DataManager(
-        prices_endpoint=settings.sheety_endpoint,
+        prices_endpoint=settings.sheety_prices_endpoint,
+        users_endpoint=settings.sheety_users_endpoint,
         data_key=settings.sheety_data_key,
+        users_key=settings.sheety_users_key,
         auth_token=settings.sheety_token,
+        username=settings.sheety_username,
+        password=settings.sheety_password,
     )
 
 
@@ -82,12 +86,27 @@ def build_destinations(sheet_rows: Iterable[Dict[str, Any]]) -> List[Destination
     return destinations
 
 
+def _extract_field(row: Dict[str, Any], field_name: str) -> Optional[str]:
+    """Return the value for field_name (case-insensitive) from row."""
+    target = field_name.strip().lower()
+    for key, value in row.items():
+        if isinstance(key, str) and key.strip().lower() == target:
+            return value
+    return None
+
+
 def load_customer_emails(manager: DataManager, email_field: str) -> List[str]:
     """Load all customer email addresses from the users sheet."""
-    customer_rows = manager.get_customer_emails()
+    try:
+        customer_rows = manager.get_customer_emails()
+    except (ValueError, requests.RequestException) as exc:
+        print(f"Impossible de récupérer les emails clients (raison: {exc}).")
+        return []
+
     emails: List[str] = []
     for row in customer_rows:
-        email_value = (row.get(email_field) or "").strip()
+        field_value = _extract_field(row, email_field)
+        email_value = (field_value or "").strip()
         if email_value:
             emails.append(email_value)
     return emails

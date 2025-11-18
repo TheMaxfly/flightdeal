@@ -10,9 +10,13 @@ from dotenv import load_dotenv
 
 @dataclass(frozen=True)
 class Settings:
-    sheety_endpoint: str
+    sheety_prices_endpoint: str
+    sheety_users_endpoint: Optional[str] = None
     sheety_token: Optional[str] = None
     sheety_data_key: str = "prices"
+    sheety_users_key: str = "users"
+    sheety_username: Optional[str] = None
+    sheety_password: Optional[str] = None
     amadeus_api_key: Optional[str] = None
     amadeus_api_secret: Optional[str] = None
     default_origin_iata: Optional[str] = None
@@ -29,8 +33,10 @@ class Settings:
 
     def validate(self) -> None:
         """Assert that the minimal required values are provided."""
-        if not self.sheety_endpoint:
-            raise EnvironmentError("SHEETY_ENDPOINT must be set (see .env.example).")
+        if not self.sheety_prices_endpoint:
+            raise EnvironmentError(
+                "SHEETY_PRICES_ENDPOINT (or legacy SHEETY_ENDPOINT) must be set (see .env.example)."
+            )
 
 
 def load_settings(dotenv_path: Optional[str] = None) -> Settings:
@@ -47,9 +53,14 @@ def load_settings(dotenv_path: Optional[str] = None) -> Settings:
         smtp_port = 587
 
     settings = Settings(
-        sheety_endpoint=os.getenv("SHEETY_ENDPOINT", ""),
+        sheety_prices_endpoint=os.getenv("SHEETY_PRICES_ENDPOINT")
+        or os.getenv("SHEETY_ENDPOINT", ""),
+        sheety_users_endpoint=os.getenv("SHEETY_USERS_ENDPOINT"),
         sheety_token=os.getenv("SHEETY_TOKEN"),
         sheety_data_key=os.getenv("SHEETY_DATA_KEY", "prices"),
+        sheety_users_key=os.getenv("SHEETY_USERS_KEY", "users"),
+        sheety_username=os.getenv("SHEETY_USERNAME"),
+        sheety_password=os.getenv("SHEETY_PASSWORD"),
         amadeus_api_key=os.getenv("AMADEUS_API_KEY"),
         amadeus_api_secret=os.getenv("AMADEUS_API_SECRET"),
         default_origin_iata=(os.getenv("ORIGIN_IATA") or "CDG").upper(),

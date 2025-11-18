@@ -1,4 +1,3 @@
-import os
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
@@ -9,27 +8,24 @@ class DataManager:
 
     def __init__(
         self,
-        prices_endpoint: Optional[str] = None,
+        prices_endpoint: str,
         users_endpoint: Optional[str] = None,
-        data_key: Optional[str] = None,
+        data_key: str = "prices",
+        users_key: str = "users",
         auth_token: Optional[str] = None,
         username: Optional[str] = None,
         password: Optional[str] = None,
     ):
-        self.prices_endpoint = (
-            prices_endpoint
-            or os.getenv("SHEETY_PRICES_ENDPOINT")
-            or os.getenv("SHEETY_ENDPOINT")
-        )
-        if not self.prices_endpoint:
+        if not prices_endpoint:
             raise ValueError("A Sheety prices endpoint must be provided to use DataManager.")
 
-        self.users_endpoint = users_endpoint or os.getenv("SHEETY_USERS_ENDPOINT")
-        self.data_key = data_key or os.getenv("SHEETY_DATA_KEY", "prices")
-        self.auth_token = auth_token or os.getenv("SHEETY_TOKEN")
-        self.username = username or os.getenv("SHEETY_USERNAME")
-        self.password = password or os.getenv("SHEETY_PASSWORD")
-        self.users_key = os.getenv("SHEETY_USERS_KEY", "users")
+        self.prices_endpoint = prices_endpoint
+        self.users_endpoint = users_endpoint
+        self.data_key = data_key
+        self.users_key = users_key
+        self.auth_token = auth_token
+        self.username = username
+        self.password = password
 
     @property
     def _headers(self) -> Dict[str, str]:

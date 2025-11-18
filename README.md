@@ -19,8 +19,8 @@ Ce projet suit ton entraînement Python : il lit une feuille Google Sheet de des
 1. Python 3.11 (ou similaire) avec `pip`.  
 2. Installer les dépendances : `pip install -r requirements.txt` (ou `requests python-dotenv` si aucun fichier requirements).  
 3. Copier `.env.example` en `.env` et renseigner :
-   - `SHEETY_ENDPOINT`, `SHEETY_TOKEN`, `SHEETY_DATA_KEY` (avec l’URL Sheety de ta feuille de destination).
-   - `SHEETY_USERS_ENDPOINT` + `SHEETY_USERS_KEY` si nécessaire pour le second onglet `users`.
+   - `SHEETY_PRICES_ENDPOINT` (ou `SHEETY_ENDPOINT` pour compatibilité), `SHEETY_TOKEN`, `SHEETY_DATA_KEY` pour l’onglet `prices`.
+   - `SHEETY_USERS_ENDPOINT` + `SHEETY_USERS_KEY` si nécessaire pour le second onglet `users`, ainsi que `SHEETY_USERNAME`/`SHEETY_PASSWORD` si ton projet Sheety utilise l’auth Basic.
    - `AMADEUS_API_KEY`, `AMADEUS_API_SECRET`.
    - `TWILIO_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`, `TWILIO_TO`.
    - `EMAIL_SENDER`, `EMAIL_PASSWORD` et éventuellement `SMTP_HOST`, `SMTP_PORT` pour expédier les notifications par e-mail.

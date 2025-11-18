@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from email.message import EmailMessage
 import smtplib
 from typing import Iterable, List, Optional
 
@@ -86,13 +87,17 @@ class NotificationManager:
         if not target_recipients:
             return 0
 
-        message = f"Subject:{subject}\n\n{body}"
         try:
             with smtplib.SMTP(self.smtp_host, self.smtp_port) as connection:
                 connection.starttls()
                 connection.login(self.email_sender, self.email_password)
                 for recipient in target_recipients:
-                    connection.sendmail(self.email_sender, recipient, message)
+                    message = EmailMessage()
+                    message["From"] = self.email_sender
+                    message["To"] = recipient
+                    message["Subject"] = subject
+                    message.set_content(body)
+                    connection.send_message(message)
         except (smtplib.SMTPException, OSError) as exc:
             raise NotificationError(f"Impossible d'envoyer l'e-mail: {exc}") from exc
 
